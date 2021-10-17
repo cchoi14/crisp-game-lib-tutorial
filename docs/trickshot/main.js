@@ -28,14 +28,21 @@ yyyyyy
 yyyyyy
  yyyy
   yy
+`,`
+
+
+  pp
+  pp
+  
+
 `];
 
 const G = {
 	WIDTH: 100,
 	HEIGHT: 100,
 	BORDER_PADDING: 10,
-    CLICKABLE: false // tracks 'player turn'
-
+    CLICKABLE: false, // tracks 'player turn',
+    CUE_VISIBLE: true
 };
 
 options = {
@@ -57,11 +64,7 @@ options = {
 */
 let rBall;
 let wBall;
-
-/**
-* @type  { Ball [] }
-*/
-let yBalls;
+let yBall;
 
 /**
  * @typedef {{
@@ -78,24 +81,19 @@ let cue;
  * }} Wall
  */
 
-/**
-* @type  { Wall [] }
-*/
-let borders;
-let walls;
-
 function update() {
 	if (!ticks) {
         reset();
 	}
-    if (!G.CLICKABLE && (wBall.speed = 0) && (rBall.speed = 0)) {
+
+    if (!G.CLICKABLE && ((ticks % 480) == 240)) {
         reset();
     }
 
     if (G.CLICKABLE && input.isJustReleased) {
         G.CLICKABLE = false;
         cue.angle = cue.pos.angleTo(wBall.pos);
-        cue.speed = Math.hypot(cue.pos.x - wBall.pos.x, cue.pos.y - wBall.pos.y);
+        cue.speed = Math.hypot(cue.pos.x - wBall.pos.x, cue.pos.y - wBall.pos.y)/5;
     }
     // draw borders
     color ("black");
@@ -107,49 +105,65 @@ function update() {
     color ("black");
     line(G.WIDTH - G.BORDER_PADDING, G.BORDER_PADDING, G.WIDTH - G.BORDER_PADDING, G.HEIGHT - G.BORDER_PADDING, 3);
     
+    
+    // draw white ball
+    color ("black");
+    char("b", wBall.pos);
+
+    // draw yellow balls
+    color ("black");
+    char("c", yBall.pos);
+
+    // draw red ball
+    color ("black");
+    char("a", rBall.pos);
+
+    // cue draw 1
+    if (G.CUE_VISIBLE == true) {
+        color ("black");
+        char('d', cue.pos);
+        color ("purple");
+        line(cue.pos, wBall.pos, 1);
+    }
+
     // draw cue
-    if (cue.speed > 0) {
-        cue.pos.x += cue.speed * Math.cos(cue.angle);
-        cue.pos.y += cue.speed * Math.sin(cue.angle);
-        cue.speed--;
-    } else if (cue.speed < 0) {
+
+    if ((ticks % 12) == 0) {
+        cue.pos.x = cue.pos.x + cue.speed * Math.cos(cue.angle);
+        cue.pos.y = cue.pos.y + cue.speed * Math.sin(cue.angle);
+    }
+
+    if ((ticks % 12) == 0 && char('d', cue.pos).isColliding.char.b) {
+        wBall.angle = cue.angle;
+        wBall.speed = cue.speed;
         cue.speed = 0;
+        G.CUE_VISIBLE = false;
+        color ("transparent");
+        char('d', cue.pos);
+        color ("transparent");
+        line(cue.pos, wBall.pos, 1);
     }
 
     if (G.CLICKABLE) {
         cue.pos = vec(input.pos.x, input.pos.y);
         cue.pos.clamp(G.BORDER_PADDING + 2, G.WIDTH - G.BORDER_PADDING - 3, G.BORDER_PADDING + 2, G.HEIGHT - G.BORDER_PADDING - 3);
     }
-    color ("purple");
-    box(cue.pos, 2);
-    color ("purple");
-    line(cue.pos, wBall.pos, 1);
 
-    // draw white ball
-    color ("black");
-    char("b", wBall.pos);
-
-    // draw yellow balls
-    yBalls.forEach((yb) => {
-        color ("black");
-        char("c", yb.pos);
-    });
-
-    // draw red ball
-    color ("black");
-    char("a", rBall.pos);
+    // move white ball
+    if ((ticks % 12) == 0) {
+        wBall.pos.x = wBall.pos.x + wBall.speed * Math.cos(wBall.angle);
+        wBall.pos.y = wBall.pos.y + wBall.speed * Math.sin(wBall.angle);
+    }
 }
 
+
 function reset() {
-    yBalls = times(5, () => {
-        const posX = rnd(G.BORDER_PADDING + 4, G.WIDTH - G.BORDER_PADDING - 4);
-        const posY = rnd(G.BORDER_PADDING + 4, G.HEIGHT - G.BORDER_PADDING - 4);
-        return {
-            pos: vec(posX, posY),
-            speed: 0,
-            angle: 0
-        };
-    });
+    yBall = {
+        pos: vec(rnd(G.BORDER_PADDING + 4, G.WIDTH - G.BORDER_PADDING - 4), rnd(G.BORDER_PADDING + 4, G.HEIGHT - G.BORDER_PADDING - 4)),
+        speed: 0,
+        angle: 0
+    };
+
     rBall = {
         pos: vec(rnd(G.BORDER_PADDING + 4, G.WIDTH - G.BORDER_PADDING - 4), rnd(G.BORDER_PADDING + 4, G.HEIGHT - G.BORDER_PADDING - 4)),
         speed: 0,
@@ -165,4 +179,5 @@ function reset() {
         pos: vec(input.pos.x, input.pos.y)
     };
     G.CLICKABLE = true;
+    G.CUE_VISIBLE = true;
 }
